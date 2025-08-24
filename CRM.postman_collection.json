@@ -1,0 +1,531 @@
+{
+  "info": {
+    "name": "CRM Programming School API",
+    "description": "API for managing CRM Programming School, teachers, and courses",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh token if it's about to expire",
+          "const accessToken = pm.collectionVariables.get('accessToken');",
+          "const accessExpiresAt = pm.collectionVariables.get('accessExpiresAt');",
+          "const refreshToken = pm.collectionVariables.get('refreshToken');",
+          "",
+          "if (accessToken && accessExpiresAt && refreshToken) {",
+          "    const expiryTime = new Date(accessExpiresAt);",
+          "    const currentTime = new Date();",
+          "    const timeUntilExpiry = expiryTime.getTime() - currentTime.getTime();",
+          "    ",
+          "    // If token expires in less than 5 minutes, refresh it",
+          "    if (timeUntilExpiry < 5 * 60 * 1000) {",
+          "        console.log('Access token is about to expire, refreshing...');",
+          "        ",
+          "        pm.sendRequest({",
+          "            url: pm.collectionVariables.get('baseUrl') + '/auth/refresh',",
+          "            method: 'POST',",
+          "            header: {",
+          "                'Content-Type': 'application/json'",
+          "            },",
+          "            body: {",
+          "                mode: 'raw',",
+          "                raw: JSON.stringify({",
+          "                    refreshToken: refreshToken",
+          "                })",
+          "            }",
+          "        }, function (err, response) {",
+          "            if (!err && response.code === 200) {",
+          "                const responseJson = response.json();",
+          "                pm.collectionVariables.set('accessToken', responseJson.accessToken);",
+          "                pm.collectionVariables.set('refreshToken', responseJson.refreshToken);",
+          "                pm.collectionVariables.set('accessExpiresAt', responseJson.accessExpiresAt);",
+          "                pm.collectionVariables.set('refreshExpiresAt', responseJson.refreshExpiresAt);",
+          "                console.log('Token refreshed automatically.');",
+          "            } else {",
+          "                console.log('Failed to refresh token automatically.');",
+          "            }",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "admin@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessExpiresAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshExpiresAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userRole",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    ",
+                  "    // Store tokens in collection variables",
+                  "    pm.collectionVariables.set('accessToken', responseJson.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', responseJson.refreshToken);",
+                  "    ",
+                  "    // Store token expiration times",
+                  "    pm.collectionVariables.set('accessExpiresAt', responseJson.accessExpiresAt);",
+                  "    pm.collectionVariables.set('refreshExpiresAt', responseJson.refreshExpiresAt);",
+                  "    ",
+                  "    // Store user info",
+                  "    pm.collectionVariables.set('userId', responseJson.user.id);",
+                  "    pm.collectionVariables.set('userRole', responseJson.user.role);",
+                  "    ",
+                  "    console.log('Login successful. Tokens saved.');",
+                  "} else {",
+                  "    console.log('Login failed with status:', pm.response.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    ",
+                  "    // Update tokens in collection variables",
+                  "    pm.collectionVariables.set('accessToken', responseJson.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', responseJson.refreshToken);",
+                  "    ",
+                  "    // Update token expiration times",
+                  "    pm.collectionVariables.set('accessExpiresAt', responseJson.accessExpiresAt);",
+                  "    pm.collectionVariables.set('refreshExpiresAt', responseJson.refreshExpiresAt);",
+                  "    ",
+                  "    console.log('Token refreshed successfully.');",
+                  "} else {",
+                  "    console.log('Token refresh failed with status:', pm.response.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    // Clear tokens from collection variables",
+                  "    pm.collectionVariables.unset('accessToken');",
+                  "    pm.collectionVariables.unset('refreshToken');",
+                  "    pm.collectionVariables.unset('accessExpiresAt');",
+                  "    pm.collectionVariables.unset('refreshExpiresAt');",
+                  "    pm.collectionVariables.unset('userId');",
+                  "    pm.collectionVariables.unset('userRole');",
+                  "    ",
+                  "    console.log('Logout successful. Tokens cleared.');",
+                  "} else {",
+                  "    console.log('Logout failed with status:', pm.response.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Recovery Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/recovery-password/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "recovery-password", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John\",\n  \"surname\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"123456789\",\n  \"age\": 25,\n  \"course\": \"FS\",\n  \"course_format\": \"online\",\n  \"course_type\": \"pro\",\n  \"sum\": 5000,\n  \"alreadyPaid\": 1000,\n  \"status\": \"In work\",\n  \"groupId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Groups",
+      "item": [
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Frontend Development\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Groups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"This order needs additional review\",\n  \"orderId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
