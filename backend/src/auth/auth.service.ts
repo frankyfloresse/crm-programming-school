@@ -9,12 +9,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { Token } from './entities/token.entity';
+import { Order } from '../orders/entities/order.entity';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { CreateManagerDto } from './dto/create-manager.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +27,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(Token)
     private tokenRepository: Repository<Token>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -33,6 +39,12 @@ export class AuthService {
 
   private calculateExpirationDate(expiresIn: string): Date {
     const now = new Date();
+
+    // Default to 30 minutes if expiresIn is not provided
+    if (!expiresIn) {
+      expiresIn = '30m';
+    }
+
     const match = expiresIn.match(/^(\d+)([smhd])$/);
     if (!match) {
       throw new Error('Invalid expiration format');
@@ -41,18 +53,23 @@ export class AuthService {
     const value = parseInt(match[1]);
     const unit = match[2];
 
-    switch (unit) {
-      case 's':
-        return new Date(now.getTime() + value * 1000);
-      case 'm':
-        return new Date(now.getTime() + value * 60 * 1000);
-      case 'h':
-        return new Date(now.getTime() + value * 60 * 60 * 1000);
-      case 'd':
-        return new Date(now.getTime() + value * 24 * 60 * 60 * 1000);
-      default:
-        throw new Error('Invalid time unit');
+    const multipliers = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+    const multiplier = multipliers[unit];
+
+    if (!multiplier) {
+      throw new Error('Invalid time unit');
     }
+
+    // Calculate expiration timestamp (this will be stored as UTC timestamp)
+    const expirationTimestamp = now.getTime() + value * multiplier;
+
+    // Return a Date object - the transformer in the entity will handle conversion
+    return new Date(expirationTimestamp);
   }
 
   private async createTokenPair(user: User): Promise<{
@@ -63,10 +80,10 @@ export class AuthService {
     jti: string;
   }> {
     const jti = this.generateJti();
-    const accessTokenExpiresIn = this.configService.get<string>(
+    const accessTokenExpiresIn = this.configService.get(
       'jwt.accessTokenExpiresIn',
     );
-    const refreshTokenExpiresIn = this.configService.get<string>(
+    const refreshTokenExpiresIn = this.configService.get(
       'jwt.refreshTokenExpiresIn',
     );
 
@@ -122,7 +139,6 @@ export class AuthService {
     return this.tokenRepository.save(token);
   }
 
-
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { email, password } = loginDto;
 
@@ -134,7 +150,16 @@ export class AuthService {
 
     // Check if account is active
     if (!user.is_active) {
-      throw new UnauthorizedException('Account is not activated. Please use password recovery to activate your account.');
+      throw new UnauthorizedException(
+        'Account is not activated. Please use password recovery to activate your account.',
+      );
+    }
+
+    // Check if account is banned
+    if (user.is_banned) {
+      throw new UnauthorizedException(
+        'Account has been banned. Please contact administrator.',
+      );
     }
 
     // Check password using entity method
@@ -250,7 +275,7 @@ export class AuthService {
     return { message: 'Successfully logged out from all devices' };
   }
 
-  async recoveryPassword(userId: number): Promise<{ token: string; }> {
+  async recoveryPassword(userId: number): Promise<{ token: string }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User with this ID does not exist');
@@ -258,15 +283,19 @@ export class AuthService {
 
     // Generate recovery token
     const recoveryToken = crypto.randomBytes(32).toString('hex');
-    const recoveryTokenExpiresIn = this.configService.get<string>('jwt.recoveryTokenExpiresIn');
-    const recoveryTokenExpiry = this.calculateExpirationDate(recoveryTokenExpiresIn);
+    const recoveryTokenExpiresIn = this.configService.get<string>(
+      'jwt.resetTokenExpiresIn',
+    );
+    const recoveryTokenExpiry = this.calculateExpirationDate(
+      recoveryTokenExpiresIn,
+    );
 
     // Save recovery token
     user.recoveryPasswordToken = recoveryToken;
     user.recoveryPasswordExpires = recoveryTokenExpiry;
     await this.userRepository.save(user);
 
-    return { 
+    return {
       token: recoveryToken,
     };
   }
@@ -300,7 +329,10 @@ export class AuthService {
     // Block all existing tokens for this user
     await this.logoutAll(user.id);
 
-    return { message: 'Password has been reset successfully and account is now activated' };
+    return {
+      message:
+        'Password has been reset successfully and account is now activated',
+    };
   }
 
   async validateUser(payload: any): Promise<User> {
@@ -338,5 +370,226 @@ export class AuthService {
     }
 
     return { user, token };
+  }
+
+  async createManager(
+    createManagerDto: CreateManagerDto,
+  ): Promise<{ message: string; activationLink: string }> {
+    const { email, firstName, lastName } = createManagerDto;
+
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiresIn = this.configService.get<string>(
+      'jwt.resetTokenExpiresIn',
+      '30m',
+    );
+    const resetTokenExpiry = this.calculateExpirationDate(resetTokenExpiresIn);
+
+    // Create user without password
+    const user = this.userRepository.create({
+      email,
+      firstName,
+      lastName,
+      role: UserRole.MANAGER,
+      password: '', // Empty password for now
+      is_active: false,
+      is_banned: false,
+      recoveryPasswordToken: resetToken,
+      recoveryPasswordExpires: resetTokenExpiry,
+    });
+
+    await this.userRepository.save(user);
+
+    // Generate activation link
+    const baseUrl = this.configService.get<string>(
+      'app.baseUrl',
+      'http://localhost:3000',
+    );
+    const activationLink = `${baseUrl}/activate/${resetToken}`;
+
+    return {
+      message:
+        'Manager created successfully. Activation link has been generated.',
+      activationLink,
+    };
+  }
+
+  async activateAccount(
+    activateAccountDto: ActivateAccountDto,
+  ): Promise<{ message: string }> {
+    const { token, password } = activateAccountDto;
+
+    const user = await this.userRepository.findOne({
+      where: {
+        recoveryPasswordToken: token,
+      },
+    });
+
+    if (
+      !user ||
+      !user.recoveryPasswordExpires ||
+      user.recoveryPasswordExpires < new Date()
+    ) {
+      throw new UnauthorizedException('Invalid or expired activation token');
+    }
+
+    // Update user
+    user.password = password;
+    user.recoveryPasswordToken = null;
+    user.recoveryPasswordExpires = null;
+    user.is_active = true;
+    await this.userRepository.save(user);
+
+    return { message: 'Account has been activated successfully' };
+  }
+
+  async getAllManagers(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ managers: any[]; total: number; page: number; limit: number }> {
+    const [managers, total] = await this.userRepository.findAndCount({
+      where: { role: UserRole.MANAGER },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'role',
+        'is_active',
+        'is_banned',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    // Get statistics for each manager
+
+    const managersWithStats = await Promise.all(
+      managers.map(async (manager) => {
+        const stats = await this.orderRepository
+          .createQueryBuilder('order')
+          .select('order.status', 'status')
+          .addSelect('COUNT(*)', 'count')
+          .where('order.managerId = :managerId', { managerId: manager.id })
+          .groupBy('order.status')
+          .getRawMany();
+
+        const totalOrders = stats.reduce(
+          (sum, stat) => sum + parseInt(stat.count || 0),
+          0,
+        );
+
+        return {
+          ...manager,
+          statistics: {
+            totalOrders,
+            byStatus: stats,
+          },
+        };
+      }),
+    );
+
+    return {
+      managers: managersWithStats,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async updateUserStatus(
+    userId: number,
+    updateStatusDto: UpdateUserStatusDto,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prevent banning admin users
+    if (user.role === 'admin' && updateStatusDto.is_banned !== undefined) {
+      throw new BadRequestException('Cannot ban admin users');
+    }
+
+    // Update status
+    if (updateStatusDto.is_banned !== undefined) {
+      user.is_banned = updateStatusDto.is_banned;
+    }
+
+    await this.userRepository.save(user);
+
+    // If user is banned, logout all sessions
+    if (updateStatusDto.is_banned) {
+      await this.logoutAll(userId);
+    }
+
+    return {
+      message: `User has been ${updateStatusDto.is_banned ? 'banned' : 'unbanned'} successfully`,
+    };
+  }
+
+  async getManagerStatistics(managerId?: number): Promise<any> {
+    if (managerId) {
+      // Statistics for specific manager
+      const stats = await this.orderRepository
+        .createQueryBuilder('order')
+        .select('order.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('order.managerId = :managerId', { managerId })
+        .groupBy('order.status')
+        .getRawMany();
+
+      return {
+        managerId,
+        stats,
+        totalOrders: stats.reduce((sum, stat) => sum + parseInt(stat.count), 0),
+      };
+    } else {
+      // Statistics for all managers
+      const managerStats = await this.orderRepository
+        .createQueryBuilder('order')
+        .select('order.managerId', 'managerId')
+        .addSelect('user.firstName', 'firstName')
+        .addSelect('user.lastName', 'lastName')
+        .addSelect('user.email', 'email')
+        .addSelect('COUNT(*)', 'totalOrders')
+        .leftJoin('order.manager', 'user')
+        .where('order.managerId IS NOT NULL')
+        .groupBy('order.managerId, user.id')
+        .orderBy('totalOrders', 'DESC')
+        .getRawMany();
+
+      return managerStats;
+    }
+  }
+
+  async getOverallOrderStatistics(): Promise<any> {
+    const stats = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('order.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('order.status')
+      .getRawMany();
+
+    const totalOrders = stats.reduce(
+      (sum, stat) => sum + parseInt(stat.count || 0),
+      0,
+    );
+
+    return {
+      stats,
+      totalOrders,
+    };
   }
 }

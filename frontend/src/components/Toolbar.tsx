@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { logoutUser } from '../store/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -33,20 +33,57 @@ function ThemeToggle() {
 export default function Toolbar() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { isLoading: authLoading } = useAppSelector((state) => state.auth);
+  const location = useLocation();
+  const { isLoading: authLoading, user } = useAppSelector((state) => state.auth);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
     navigate(ROUTES.AUTH);
   };
 
+  const handleAdminPanel = () => {
+    navigate('/admin');
+  };
+
+  const handleOrders = () => {
+    navigate(ROUTES.HOME);
+  };
+
+  const isAdminPage = location.pathname === ROUTES.ADMIN;
+
+  const handleLogoClick = () => {
+    navigate(ROUTES.HOME);
+  };
+
   return (
-    <div className="navbar bg-base-200 backdrop-blur-sm bg-opacity-80 rounded-xl shadow-lg mb-6 px-6">
+    <div className="navbar bg-base-200/80 backdrop-blur-sm rounded-xl shadow-lg mb-6 px-6">
       <div className="navbar-start">
-        <h1 className="text-xl font-bold">LOGO</h1>
+        <button
+          onClick={handleLogoClick}
+          className="text-xl font-bold hover:opacity-80 transition-opacity cursor-pointer"
+        >
+          LOGO
+        </button>
       </div>
-      
+
+      <div className="navbar-center">
+        {user && (
+          <div className="text-sm">
+            <span className="font-medium">{user.firstName} {user.lastName}</span>
+            <span className="ml-2 text-xs opacity-70">({user.role})</span>
+          </div>
+        )}
+      </div>
+
       <div className="navbar-end space-x-2">
+        {user?.role === 'admin' && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={isAdminPage ? handleOrders : handleAdminPanel}
+          >
+            {isAdminPage ? 'Orders' : 'Admin Panel'}
+          </button>
+        )}
         <ThemeToggle />
         <button
           className={`btn btn-error btn-sm ${authLoading ? 'loading' : ''}`}

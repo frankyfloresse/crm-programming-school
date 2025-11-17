@@ -1,0 +1,14 @@
+{
+  "name": "crm-programming-school",
+  "version": "1.0.0",
+  "description": "CRM system for programming school",
+  "scripts": {
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:prod": "docker-compose up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "docker:prod:down": "docker-compose down"
+  },
+  "keywords": ["crm", "programming-school", "nestjs", "react"],
+  "author": "",
+  "license": "ISC"
+}

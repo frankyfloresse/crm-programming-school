@@ -1,151 +1,303 @@
-import { useEffect } from 'react';
-import { fetchOrders } from '../store/orders/ordersSlice';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { fetchOrders } from "../store/orders/ordersSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { Pagination } from "../components/Pagination";
+import { Filters } from "../components/Filters";
+import ExpandableTableRow from "../components/ExpandableTableRow";
+import OrderDetails from "../components/OrderDetails";
+import EditOrderModal from "../components/EditOrderModal";
+import type { Order } from "../api/services/orders.service";
 
 export default function OrdersPage() {
   const dispatch = useAppDispatch();
-  const { orders, isLoading, error } = useAppSelector((state) => state.orders);
+  const { orders, pagination, isLoading, error } = useAppSelector(
+    (state) => state.orders
+  );
+  const { user } = useAppSelector((state) => state.auth);
+
+  const [searchParams, setSearchParams] = useSearchParams(
+    new URLSearchParams(location.search)
+  );
+
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    dispatch(fetchOrders());
-  }, [dispatch]);
+    // Convert searchParams to filters object
+    const { page = "1", sortBy, ...filter } = Object.fromEntries(searchParams);
 
-  if (isLoading) {
+    const params = {
+      page,
+      limit: 25,
+      sortBy,
+      filter,
+    };
+
+    dispatch(fetchOrders(params));
+  }, [searchParams, dispatch]);
+
+  const getSortInfo = () => {
+    const sortBy = searchParams.get("sortBy") || "";
+    const [currentColumn, currentDirection] = sortBy.split(":");
+    return { currentColumn, currentDirection };
+  };
+
+  const handleSort = (column: string) => {
+    const { currentColumn, currentDirection } = getSortInfo();
+
+    let direction = "ASC";
+    if (column === currentColumn) {
+      direction = !currentDirection
+        ? "ASC"
+        : currentDirection === "ASC"
+        ? "DESC"
+        : "";
+    }
+
+    const params = Object.fromEntries(searchParams.entries());
+
+    setSearchParams({
+      ...params,
+      sortBy: direction ? `${column}:${direction}` : "",
+      page: "1",
+    });
+  };
+
+  const getSortIndicator = (column: string) => {
+    const { currentColumn, currentDirection } = getSortInfo();
+
+    if (!currentDirection || currentColumn !== column) {
+      return null;
+    }
+
     return (
-      <div>
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Orders</h1>
-          <p className="text-base-content/70">
-            A list of all orders in your account.
-          </p>
-        </div>
-        <div className="flex items-center justify-center min-h-[200px]">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      </div>
+      <span className="ml-1 text-primary">
+        {currentDirection === "ASC" ? "▲" : "▼"}
+      </span>
     );
-  }
+  };
+
+  // Filter handlers
+  const handleFiltersChange = (newFilters: Record<string, unknown>) => {
+    setSearchParams({ ...newFilters, page: "1" });
+  };
+
+  const handleResetFilters = () => {
+    setSearchParams({ page: "1" });
+  };
+
+  // Row expansion handlers
+  const toggleRowExpansion = (orderId: number) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(orderId)) {
+      newExpandedRows.delete(orderId);
+    } else {
+      newExpandedRows.add(orderId);
+    }
+    setExpandedRows(newExpandedRows);
+  };
+
+  // Edit modal handlers
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingOrder(null);
+  };
+
+  const handleOrderUpdated = () => {
+    // Convert searchParams to filters object
+    const {
+      page = "1",
+      sortBy,
+      ...filter
+    } = Object.fromEntries(searchParams.entries());
+
+    dispatch(
+      fetchOrders({
+        page,
+        limit: 25,
+        sortBy,
+        filter,
+      })
+    );
+  };
+
+  // Check if user can comment/edit
+  const canUserInteractWithOrder = (order: Order) => {
+    if (!user) return false;
+
+    // Check if order.manager is an object or string
+    if (typeof order.manager === "object" && order.manager !== null) {
+      return Number(order.manager.id) === Number(user.id);
+    }
+
+    return !order.managerId || Number(order.managerId) === Number(user.id);
+  };
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Orders</h1>
-        <p className="text-base-content/70">
-          A list of all orders in your account.
-        </p>
-      </div>
-      
       {error && (
         <div className="alert alert-error mb-4">
           <span>{error}</span>
         </div>
       )}
 
-      <div className="overflow-x-auto bg-base-200 rounded-lg shadow">
-        <table className="table table-hover w-full min-w-[1400px]">
-          <thead>
-            <tr>
-              <th className="w-16">ID</th>
-              <th className="w-32">Name</th>
-              <th className="w-32">Surname</th>
-              <th className="w-48">Email</th>
-              <th className="w-36">Phone</th>
-              <th className="w-16">Age</th>
-              <th className="w-20">Course</th>
-              <th className="w-24">Format</th>
-              <th className="w-24">Type</th>
-              <th className="w-24">Status</th>
-              <th className="w-20">Sum</th>
-              <th className="w-20">Paid</th>
-              <th className="w-32">Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>
-                  <span className="font-medium text-sm">
-                    {order.id}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.name}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.surname}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.email}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.phone}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.age}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.course}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.course_format}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.course_type}
-                  </span>
-                </td>
-                <td>
-                  {order.status ? (
-                    <span className="badge badge-success badge-sm">
-                      {order.status}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-base-content/70">
-                      -
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.sum || '-'}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {order.alreadyPaid || '-'}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-sm">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </span>
-                </td>
+      <Filters
+        onFiltersChange={handleFiltersChange}
+        onResetFilters={handleResetFilters}
+        currentFilters={Object.fromEntries(searchParams.entries())}
+        sortBy={searchParams.get("sortBy") || undefined}
+      />
+
+      <div className="relative">
+        <div className="overflow-x-auto bg-base-200 rounded-lg shadow">
+          <table className="table table-hover w-full">
+            <thead>
+              <tr>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("id")}
+                >
+                  ID{getSortIndicator("id")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("name")}
+                >
+                  Name{getSortIndicator("name")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("surname")}
+                >
+                  Surname{getSortIndicator("surname")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("email")}
+                >
+                  Email{getSortIndicator("email")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("phone")}
+                >
+                  Phone{getSortIndicator("phone")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("age")}
+                >
+                  Age{getSortIndicator("age")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("course")}
+                >
+                  Course{getSortIndicator("course")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("course_format")}
+                >
+                  Format{getSortIndicator("course_format")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("course_type")}
+                >
+                  Type{getSortIndicator("course_type")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("status")}
+                >
+                  Status{getSortIndicator("status")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("sum")}
+                >
+                  Sum{getSortIndicator("sum")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("alreadyPaid")}
+                >
+                  Paid{getSortIndicator("alreadyPaid")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("group.name")}
+                >
+                  Group{getSortIndicator("group.name")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("created_at")}
+                >
+                  Created At{getSortIndicator("created_at")}
+                </th>
+                <th
+                  className="cursor-pointer hover:text-primary"
+                  onClick={() => handleSort("manager.firstName")}
+                >
+                  Manager{getSortIndicator("manager.firstName")}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {orders.length === 0 && !isLoading && (
-          <div className="p-6 text-center">
-            <span className="text-base-content/70">
-              No orders found
-            </span>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <ExpandableTableRow
+                  key={order.id}
+                  order={order}
+                  isExpanded={expandedRows.has(Number(order.id))}
+                  onToggle={() => toggleRowExpansion(Number(order.id))}
+                >
+                  <OrderDetails
+                    order={order}
+                    canInteract={canUserInteractWithOrder(order)}
+                    onCommentSubmitted={handleOrderUpdated}
+                    onEditOrder={handleEditOrder}
+                  />
+                </ExpandableTableRow>
+              ))}
+            </tbody>
+          </table>
+          {orders.length === 0 && !isLoading && (
+            <div className="p-6 text-center">
+              <span className="text-base-content/70">No orders found</span>
+            </div>
+          )}
+        </div>
+
+        {isLoading && (
+          <div className="absolute inset-0 bg-base-200/75 flex items-center justify-center rounded-lg">
+            <span className="loading loading-spinner loading-lg"></span>
           </div>
         )}
+
+        <Pagination
+          currentPage={Number(searchParams.get("page")) || 1}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          onPageChange={(page) => {
+            const params = Object.fromEntries(searchParams.entries());
+            setSearchParams({ ...params, page: String(page) });
+          }}
+        />
       </div>
+
+      <EditOrderModal
+        order={editingOrder}
+        isOpen={!!editingOrder}
+        onClose={handleCloseEditModal}
+        canEdit={editingOrder ? canUserInteractWithOrder(editingOrder) : false}
+        onOrderUpdated={handleOrderUpdated}
+      />
     </div>
   );
 }

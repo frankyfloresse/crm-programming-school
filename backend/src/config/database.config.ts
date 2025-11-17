@@ -14,5 +14,10 @@ export default registerAs(
     // synchronize: process.env.NODE_ENV === 'development',
     logging: process.env.NODE_ENV === 'development',
     charset: 'utf8mb4',
+    extra: {
+      connectionLimit: 10,
+      serverTimezone: 'UTC',
+    },
+    timezone: 'Z',
   }),
 );

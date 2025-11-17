@@ -8,17 +8,18 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from './entities/user.entity';
 import { Token } from './entities/token.entity';
+import { Order } from '../orders/entities/order.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Token]),
+    TypeOrmModule.forFeature([User, Token, Order]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret'),
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('jwt.secret'),
         signOptions: {
-          expiresIn: configService.get<string>('jwt.accessTokenExpiresIn'),
+          expiresIn: configService.get('jwt.accessTokenExpiresIn'),
         },
       }),
       inject: [ConfigService],

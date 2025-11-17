@@ -55,12 +55,24 @@ export class User {
 
   @Exclude()
   @ApiProperty({ description: 'Password recovery token expiry' })
-  @Column({ nullable: true })
+  @Column({
+    type: 'bigint',
+    nullable: true,
+    transformer: {
+      to: (value: Date) => value ? value.getTime() : null,
+      from: (value: number | string) => value ? new Date(typeof value === 'string' ? parseInt(value) : value) : null
+    }
+  })
   recoveryPasswordExpires?: Date;
 
+  
   @ApiProperty({ description: 'Account activation status' })
   @Column({ default: false })
   is_active: boolean;
+
+  @ApiProperty({ description: 'Account ban status' })
+  @Column({ default: false })
+  is_banned: boolean;
 
   @ApiProperty({ description: 'User tokens' })
   @OneToMany(() => Token, (token) => token.user, { cascade: true })

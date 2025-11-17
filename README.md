@@ -32,7 +32,7 @@ DB_NAME=database
 #### 3. Run the application:
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 #### 4. Access the application:

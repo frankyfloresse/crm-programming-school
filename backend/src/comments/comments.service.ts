@@ -40,15 +40,29 @@ export class CommentsService {
     });
     const savedComment = await this.commentRepository.save(comment);
 
-    // Update order: assign manager and change status to "In work" (only on first comment)
-    await this.orderRepository.save({
+    // Update order: assign manager and change status to "In work" only if status is "New" or missing
+    const updateData: Partial<Order> = {
       ...order,
       manager: user,
       managerId: user.id,
-      status: OrderStatus.IN_WORK,
-    });
+    };
+
+    // Only set status to "In work" if current status is "New" or missing
+    if (!order.status || order.status === OrderStatus.NEW) {
+      updateData.status = OrderStatus.IN_WORK;
+    }
+
+    await this.orderRepository.save(updateData);
 
     return savedComment;
+  }
+
+  async findByOrderId(orderId: number): Promise<Comment[]> {
+    return this.commentRepository.find({
+      where: { orderId },
+      relations: ['user'],
+      order: { createdAt: 'ASC' },
+    });
   }
 
   async findAll(): Promise<Comment[]> {

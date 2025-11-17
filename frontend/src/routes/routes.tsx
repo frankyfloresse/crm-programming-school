@@ -3,6 +3,8 @@ import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import LoginPage from '../pages/LoginPage';
 import OrdersPage from '../pages/OrdersPage';
+import AdminPage from '../pages/AdminPage';
+import ActivateAccountPage from '../pages/ActivateAccountPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import { ROUTES } from './constants';
 
@@ -39,7 +41,15 @@ export const router = createBrowserRouter([
         index: true,
         element: <OrdersPage />,
       },
+      {
+        path: ROUTES.ADMIN,
+        element: <AdminPage />,
+      },
     ],
+  },
+  {
+    path: ROUTES.ACTIVATE,
+    element: <ActivateAccountPage />,
   },
   {
     path: ROUTES.NOT_FOUND,

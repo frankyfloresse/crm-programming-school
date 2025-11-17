@@ -9,7 +9,6 @@ export class UserSeeder implements Seeder {
     // Check if users already exist
     const existingUsers = await userRepository.count();
     if (existingUsers > 0) {
-      console.log('Users already exist, skipping user seeding');
       return;
     }
 
@@ -36,7 +35,5 @@ export class UserSeeder implements Seeder {
       const user = userRepository.create(userData);
       await userRepository.save(user);
     }
-
-    console.log('✅ Users seeded successfully');
   }
 }

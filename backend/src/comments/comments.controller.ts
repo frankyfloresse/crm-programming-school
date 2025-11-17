@@ -4,12 +4,15 @@ import {
   Post,
   Body,
   UseGuards,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -38,6 +41,18 @@ export class CommentsController {
     @RequestUser() user: User,
   ): Promise<Comment> {
     return this.commentsService.create(createCommentDto, user);
+  }
+
+  @Get('order/:orderId')
+  @ApiOperation({ summary: 'Get comments by order ID' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comments retrieved successfully',
+    type: [Comment],
+  })
+  findByOrderId(@Param('orderId', ParseIntPipe) orderId: number): Promise<Comment[]> {
+    return this.commentsService.findByOrderId(orderId);
   }
 
   @Get()

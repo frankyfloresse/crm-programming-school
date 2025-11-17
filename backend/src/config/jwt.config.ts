@@ -4,7 +4,5 @@ export default registerAs('jwt', () => ({
   secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
   accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
   refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  recoveryTokenExpiresIn: process.env.JWT_RECOVERY_EXPIRES_IN || '30m',
-  // Legacy support for existing expiresIn
-  expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  resetTokenExpiresIn: process.env.JWT_RECOVERY_EXPIRES_IN || '30m',
 }));

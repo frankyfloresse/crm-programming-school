@@ -1,5 +1,6 @@
 import axios from 'axios';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
+import { store, clearStore } from '../store';
 
 // Create axios instance
 export const axiosInstance = axios.create({
@@ -11,6 +12,11 @@ export const axiosInstance = axios.create({
 
 // Request interceptor - add token from localStorage
 axiosInstance.interceptors.request.use((config) => {
+  // Don't add auth token for activate-account endpoint
+  if (config.url?.includes('/auth/activate-account')) {
+    return config;
+  }
+
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -19,13 +25,19 @@ axiosInstance.interceptors.request.use((config) => {
 });
 
 // Refresh token logic - simple localStorage operations
-const refreshAuthLogic = async (failedRequest: { response: { config: { headers: Record<string, string> } } }) => {
+const refreshAuthLogic = async (failedRequest: { response: { config: { headers: Record<string, string>; url?: string } } }) => {
+  // Don't try to refresh token for public endpoints
+  if (failedRequest.response.config.url?.includes('/auth/login') ||
+      failedRequest.response.config.url?.includes('/auth/activate-account')) {
+    return Promise.reject(failedRequest);
+  }
+
   const refreshToken = localStorage.getItem('refreshToken');
-  
+
   if (!refreshToken) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
+    store.dispatch(clearStore());
     return Promise.reject();
   }
 
@@ -47,7 +59,7 @@ const refreshAuthLogic = async (failedRequest: { response: { config: { headers: 
   } catch {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
+    store.dispatch(clearStore());
     return Promise.reject();
   }
 };

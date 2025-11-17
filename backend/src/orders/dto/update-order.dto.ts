@@ -7,75 +7,71 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(25)
-  name?: string;
+  name?: string | null;
 
   @ApiPropertyOptional({ description: 'Student surname', maxLength: 25 })
   @IsOptional()
   @IsString()
   @MaxLength(25)
-  surname?: string;
+  surname?: string | null;
 
   @ApiPropertyOptional({ description: 'Student email', maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  email?: string;
+  email?: string | null;
 
   @ApiPropertyOptional({ description: 'Student phone', maxLength: 12 })
   @IsOptional()
   @IsString()
   @MaxLength(12)
-  phone?: string;
+  phone?: string | null;
 
   @ApiPropertyOptional({ description: 'Student age' })
   @IsOptional()
-  @IsNumber()
-  age?: number;
+  age?: number | null;
 
   @ApiPropertyOptional({ description: 'Course', enum: Course })
   @IsOptional()
   @IsEnum(Course)
-  course?: Course;
+  course?: Course | null;
 
   @ApiPropertyOptional({ description: 'Course format', enum: CourseFormat })
   @IsOptional()
   @IsEnum(CourseFormat)
-  course_format?: CourseFormat;
+  course_format?: CourseFormat | null;
 
   @ApiPropertyOptional({ description: 'Course type', enum: CourseType })
   @IsOptional()
   @IsEnum(CourseType)
-  course_type?: CourseType;
+  course_type?: CourseType | null;
 
   @ApiPropertyOptional({ description: 'Total sum' })
   @IsOptional()
-  @IsNumber()
-  sum?: number;
+  sum?: number | null;
 
   @ApiPropertyOptional({ description: 'Already paid amount' })
   @IsOptional()
-  @IsNumber()
-  alreadyPaid?: number;
+  alreadyPaid?: number | null;
 
   @ApiPropertyOptional({ description: 'UTM parameters', maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  utm?: string;
+  utm?: string | null;
 
   @ApiPropertyOptional({ description: 'Message', maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  msg?: string;
+  msg?: string | null;
 
   @ApiPropertyOptional({ description: 'Order status', enum: OrderStatus })
   @IsOptional()
   @IsEnum(OrderStatus)
-  status?: OrderStatus;
+  status?: OrderStatus | null;
 
   @ApiPropertyOptional({ description: 'Group ID' })
   @IsOptional()
-  @IsNumber()
-  groupId?: number;
+  groupId?: number | null;
 }

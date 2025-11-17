@@ -7,12 +7,13 @@ import { GroupsModule } from './groups/groups.module';
 import { CommentsModule } from './comments/comments.module';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
+import appConfig from './config/app.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, jwtConfig],
+      load: [databaseConfig, jwtConfig, appConfig],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

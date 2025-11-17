@@ -1,24 +1,45 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { ordersService, type Order } from '../../api/services/orders.service';
+import { ordersService, type Order, type PaginatedResponse } from '../../api/services/orders.service';
 
 interface OrdersState {
   orders: Order[];
+  pagination: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
   isLoading: boolean;
   error: string | null;
 }
 
 const initialState: OrdersState = {
   orders: [],
+  pagination: {
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  },
   isLoading: false,
   error: null,
 };
 
 // Async thunks
-export const fetchOrders = createAsyncThunk<Order[]>(
+export const fetchOrders = createAsyncThunk<
+  PaginatedResponse<Order>,
+  {
+    page?: number | string | null;
+    limit?: number | null;
+    sortBy?: string | null;
+    filter?: Record<string, unknown>;
+  }
+>(
   'orders/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      return await ordersService.getOrders();
+      return await ordersService.getOrders(params);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders');
     }
@@ -30,6 +51,7 @@ export const fetchOrder = createAsyncThunk<Order, number>(
   async (id, { rejectWithValue }) => {
     try {
       return await ordersService.getOrder(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch order');
     }
@@ -41,6 +63,7 @@ export const updateOrder = createAsyncThunk<Order, { id: number; data: Partial<O
   async ({ id, data }, { rejectWithValue }) => {
     try {
       return await ordersService.updateOrder(id, data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update order');
     }
@@ -64,7 +87,13 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.orders = action.payload;
+        state.orders = action.payload.data;
+        state.pagination = {
+          currentPage: action.payload.meta.currentPage,
+          itemsPerPage: action.payload.meta.itemsPerPage,
+          totalItems: action.payload.meta.totalItems,
+          totalPages: action.payload.meta.totalPages,
+        };
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.isLoading = false;

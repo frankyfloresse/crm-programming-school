@@ -1,13 +1,24 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, createAction, type UnknownAction } from '@reduxjs/toolkit';
 import authReducer from './auth/authSlice';
 import ordersReducer from './orders/ordersSlice';
 
-export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    orders: ordersReducer,
-  },
+export const clearStore = createAction('store/clear');
+
+const appReducer = combineReducers({
+  auth: authReducer,
+  orders: ordersReducer,
 });
 
-export type RootState = ReturnType<typeof store.getState>;
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
+  if (clearStore.match(action)) {
+    state = undefined;
+  }
+  return appReducer(state, action);
+};
+
+export const store = configureStore({
+  reducer: rootReducer,
+});
+
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;
