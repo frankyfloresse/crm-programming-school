@@ -1,6 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsEnum, MaxLength } from 'class-validator';
-import { OrderStatus, Course, CourseType, CourseFormat } from '../entities/order.entity';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
+import {
+  OrderStatus,
+  Course,
+  CourseType,
+  CourseFormat,
+} from '../entities/order.entity';
 
 export class UpdateOrderDto {
   @ApiPropertyOptional({ description: 'Student first name', maxLength: 25 })
@@ -27,8 +40,11 @@ export class UpdateOrderDto {
   @MaxLength(12)
   phone?: string | null;
 
-  @ApiPropertyOptional({ description: 'Student age' })
+  @ApiPropertyOptional({ description: 'Student age', minimum: 0, maximum: 120 })
   @IsOptional()
+  @IsNumber()
+  @Min(1, { message: 'Age cannot be less than 1' })
+  @Max(120, { message: 'Age cannot be more than 120' })
   age?: number | null;
 
   @ApiPropertyOptional({ description: 'Course', enum: Course })
@@ -46,12 +62,16 @@ export class UpdateOrderDto {
   @IsEnum(CourseType)
   course_type?: CourseType | null;
 
-  @ApiPropertyOptional({ description: 'Total sum' })
+  @ApiPropertyOptional({ description: 'Total sum', minimum: 0 })
   @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'Sum cannot be negative' })
   sum?: number | null;
 
-  @ApiPropertyOptional({ description: 'Already paid amount' })
+  @ApiPropertyOptional({ description: 'Already paid amount', minimum: 0 })
   @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'Already paid amount cannot be negative' })
   alreadyPaid?: number | null;
 
   @ApiPropertyOptional({ description: 'UTM parameters', maxLength: 100 })

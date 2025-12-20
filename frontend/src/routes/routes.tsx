@@ -44,6 +44,15 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.ADMIN,
         element: <AdminPage />,
+        loader: () => {
+          const userRole = localStorage.getItem('userRole');
+
+          if (userRole !== 'admin') {
+            return replace(ROUTES.HOME);
+          }
+
+          return null;
+        },
       },
     ],
   },

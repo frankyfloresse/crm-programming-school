@@ -9,7 +9,7 @@ import {
   FilterOperator,
 } from 'nestjs-paginate';
 import * as XLSX from 'xlsx';
-import { Order } from './entities/order.entity';
+import { Order, OrderStatus } from './entities/order.entity';
 
 @Injectable()
 export class OrdersService {
@@ -82,6 +82,13 @@ export class OrdersService {
 
   async update(id: number, updateData: Partial<Order>): Promise<Order> {
     const order = await this.findOne(id);
+
+    // If status is being set to 'New', clear the manager
+    if (updateData.status === OrderStatus.NEW) {
+      console.log('clear manager');
+      updateData.managerId = null;
+      updateData.manager = null;
+    }
 
     Object.assign(order, updateData);
 

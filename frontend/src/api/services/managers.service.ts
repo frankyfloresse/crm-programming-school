@@ -79,15 +79,15 @@ export const managersService = {
     return response.data;
   },
 
-  // Update user status (ban/unban)
-  async updateUserStatus(
-    userId: number,
-    data: UpdateUserStatusDto
-  ): Promise<{ message: string }> {
-    const response = await axiosInstance.put(
-      `/auth/users/${userId}/status`,
-      data
-    );
+  // Ban user
+  async banUser(userId: number): Promise<{ message: string }> {
+    const response = await axiosInstance.post(`/auth/users/${userId}/ban`);
+    return response.data;
+  },
+
+  // Unban user
+  async unbanUser(userId: number): Promise<{ message: string }> {
+    const response = await axiosInstance.post(`/auth/users/${userId}/unban`);
     return response.data;
   },
 

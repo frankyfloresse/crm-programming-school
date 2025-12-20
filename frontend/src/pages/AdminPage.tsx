@@ -70,14 +70,25 @@ export default function AdminPage() {
     }
   };
 
-  const handleStatusUpdate = async (userId: number, isBanned: boolean) => {
+  const handleBanUser = async (userId: number) => {
     try {
-      await managersService.updateUserStatus(userId, { is_banned: isBanned });
-      alert(`Manager ${isBanned ? "banned" : "unbanned"} successfully!`);
+      await managersService.banUser(userId);
+      alert("Manager banned successfully!");
       fetchManagers(currentPage);
     } catch (error: any) {
-      console.error("Failed to update status:", error);
-      alert(error.response?.data?.message || "Failed to update status");
+      console.error("Failed to ban user:", error);
+      alert(error.response?.data?.message || "Failed to ban user");
+    }
+  };
+
+  const handleUnbanUser = async (userId: number) => {
+    try {
+      await managersService.unbanUser(userId);
+      alert("Manager unbanned successfully!");
+      fetchManagers(currentPage);
+    } catch (error: any) {
+      console.error("Failed to unban user:", error);
+      alert(error.response?.data?.message || "Failed to unban user");
     }
   };
 
@@ -267,7 +278,7 @@ export default function AdminPage() {
                             <button
                               className="btn btn-xs btn-error"
                               onClick={() =>
-                                handleStatusUpdate(manager.id, true)
+                                handleBanUser(manager.id)
                               }
                               title="Ban manager"
                             >
@@ -277,7 +288,7 @@ export default function AdminPage() {
                             <button
                               className="btn btn-xs btn-success"
                               onClick={() =>
-                                handleStatusUpdate(manager.id, false)
+                                handleUnbanUser(manager.id)
                               }
                               title="Unban manager"
                             >

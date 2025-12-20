@@ -65,13 +65,9 @@ export default function ExpandableTableRow({
           <span className="text-sm">{order.course_type}</span>
         </td>
         <td>
-          {order.status ? (
-            <div className="badge badge-success badge-sm whitespace-nowrap">
-              {order.status}
-            </div>
-          ) : (
-            <span className="text-sm text-base-content/50">-</span>
-          )}
+          <div className="badge badge-success badge-sm whitespace-nowrap">
+            {order.status || 'New'}
+          </div>
         </td>
         <td>
           <span className="text-sm">{order.sum || '-'}</span>

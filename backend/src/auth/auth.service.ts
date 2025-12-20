@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { Token } from './entities/token.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -145,7 +146,7 @@ export class AuthService {
     // Find user
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials0');
     }
 
     // Check if account is active
@@ -165,7 +166,7 @@ export class AuthService {
     // Check password using entity method
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials1' + user.email);
     }
 
     // Generate token pair
@@ -319,8 +320,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired recovery token');
     }
 
-    // Update user (password will be hashed automatically by @BeforeUpdate hook)
-    user.password = newPassword;
+    // Hash password before saving
+    user.password = await bcrypt.hash(newPassword, 10);
     user.recoveryPasswordToken = null;
     user.recoveryPasswordExpires = null;
     user.is_active = true; // Activate account on first password recovery
@@ -441,8 +442,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired activation token');
     }
 
-    // Update user
-    user.password = password;
+    // Hash password before saving
+    user.password = await bcrypt.hash(password, 10);
     user.recoveryPasswordToken = null;
     user.recoveryPasswordExpires = null;
     user.is_active = true;
@@ -577,9 +578,9 @@ export class AuthService {
   async getOverallOrderStatistics(): Promise<any> {
     const stats = await this.orderRepository
       .createQueryBuilder('order')
-      .select('order.status', 'status')
+      .select("COALESCE(order.status, 'New')", 'status')
       .addSelect('COUNT(*)', 'count')
-      .groupBy('order.status')
+      .groupBy("COALESCE(order.status, 'New')")
       .getRawMany();
 
     const totalOrders = stats.reduce(

@@ -112,6 +112,7 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
     },
     clearError: (state) => {
       state.error = null;
@@ -131,6 +132,7 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         localStorage.setItem('accessToken', action.payload.accessToken);
         localStorage.setItem('refreshToken', action.payload.refreshToken);
+        localStorage.setItem('userRole', action.payload.user.role);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -144,6 +146,7 @@ const authSlice = createSlice({
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload;
+        localStorage.setItem('userRole', action.payload.role);
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -154,6 +157,7 @@ const authSlice = createSlice({
         state.user = null;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
       })
       // Logout
       .addCase(logoutUser.pending, (state) => {
@@ -167,6 +171,7 @@ const authSlice = createSlice({
         state.error = null;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -177,6 +182,7 @@ const authSlice = createSlice({
         state.user = null;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
       });
   },
 });

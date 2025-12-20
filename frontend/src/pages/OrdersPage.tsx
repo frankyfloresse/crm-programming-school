@@ -20,7 +20,7 @@ export default function OrdersPage() {
     new URLSearchParams(location.search)
   );
 
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -89,13 +89,7 @@ export default function OrdersPage() {
 
   // Row expansion handlers
   const toggleRowExpansion = (orderId: number) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(orderId)) {
-      newExpandedRows.delete(orderId);
-    } else {
-      newExpandedRows.add(orderId);
-    }
-    setExpandedRows(newExpandedRows);
+    setExpandedRow(prev => prev === orderId ? null : orderId);
   };
 
   // Edit modal handlers
@@ -254,7 +248,7 @@ export default function OrdersPage() {
                 <ExpandableTableRow
                   key={order.id}
                   order={order}
-                  isExpanded={expandedRows.has(Number(order.id))}
+                  isExpanded={expandedRow === Number(order.id)}
                   onToggle={() => toggleRowExpansion(Number(order.id))}
                 >
                   <OrderDetails

@@ -160,19 +160,32 @@ export class AuthController {
     return this.authService.getAllManagers(page, limit);
   }
 
-  @Put('users/:userId/status')
+  @Post('users/:userId/ban')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update user ban status (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User status updated successfully' })
+  @ApiOperation({ summary: 'Ban user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User banned successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async updateUserStatus(
+  async banUser(
     @Param('userId', ParseIntPipe) userId: number,
-    @Body() updateStatusDto: UpdateUserStatusDto,
   ): Promise<{ message: string }> {
-    return this.authService.updateUserStatus(userId, updateStatusDto);
+    return this.authService.updateUserStatus(userId, { is_banned: true });
+  }
+
+  @Post('users/:userId/unban')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unban user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User unbanned successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async unbanUser(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<{ message: string }> {
+    return this.authService.updateUserStatus(userId, { is_banned: false });
   }
 
   @Get('manager-statistics')
