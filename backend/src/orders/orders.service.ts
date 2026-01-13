@@ -60,6 +60,11 @@ export class OrdersService {
   ) {}
 
   async findAll(query: PaginateQuery): Promise<Paginated<Order>> {
+    // If filtering by 'New' status, we need to include null status values as well
+    if (query.filter?.status === OrderStatus.NEW) {
+      query.filter.status = [OrderStatus.NEW, '$or:$null'];
+    }
+
     return paginate(
       query,
       this.orderRepository,
@@ -96,6 +101,11 @@ export class OrdersService {
   }
 
   async exportToExcel(query: PaginateQuery): Promise<Buffer> {
+    // If filtering by 'New' status, we need to include null status values as well
+    if (query.filter?.status === OrderStatus.NEW) {
+      query.filter.status = [OrderStatus.NEW, '$or:$null'];
+    }
+
     // Use the same pagination logic but with limit = -1 to get all records
     const paginatedResult = await paginate(
       { ...query, limit: -1 },

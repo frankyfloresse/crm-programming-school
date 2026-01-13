@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Toolbar from '../components/Toolbar';
 import { getCurrentUser } from '../store/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -10,6 +10,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { user, accessToken, isLoading } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
@@ -18,6 +19,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       dispatch(getCurrentUser());
     }
   }, [dispatch, accessToken, user, isLoading]);
+
+  useEffect(() => {
+    // If no token, navigate to auth
+    if (!accessToken && !isLoading) {
+      navigate('/auth');
+    }
+  }, [accessToken, isLoading, navigate]);
 
   return (
     <div className="min-h-screen bg-base-100 p-6">

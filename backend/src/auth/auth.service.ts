@@ -146,7 +146,7 @@ export class AuthService {
     // Find user
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials0');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Check if account is active
@@ -166,7 +166,7 @@ export class AuthService {
     // Check password using entity method
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials1' + user.email);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Generate token pair

@@ -43,7 +43,7 @@
           "            body: {",
           "                mode: 'raw',",
           "                raw: JSON.stringify({",
-          "                    refreshToken: refreshToken",
+          "                    refreshToken: refreshToken,",
           "                })",
           "            }",
           "        }, function (err, response) {",
@@ -108,6 +108,16 @@
     {
       "key": "userRole",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "groupId",
+      "value": "1",
       "type": "string"
     }
   ],
@@ -260,7 +270,74 @@
           "response": []
         },
         {
-          "name": "Recovery Password",
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"activation-token-here\",\n  \"newPassword\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/activate-account",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "activate-account"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Recovery Password (Admin)",
           "request": {
             "method": "POST",
             "header": [],
@@ -289,7 +366,7 @@
           "response": []
         },
         {
-          "name": "Reset Password",
+          "name": "Create Manager (Admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -300,12 +377,159 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"newpassword123\"\n}"
+              "raw": "{\n  \"email\": \"manager@example.com\",\n  \"password\": \"manager123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Manager\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/reset-password",
+              "raw": "{{baseUrl}}/auth/create-manager",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "reset-password"]
+              "path": ["auth", "create-manager"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Managers (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/managers?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "managers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ban User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/:userId/ban",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "users", ":userId", "ban"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unban User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/:userId/unban",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "users", ":userId", "unban"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Manager Statistics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/manager-statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "manager-statistics"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Overall Statistics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/overall-statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "overall-statistics"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": []
@@ -321,9 +545,76 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/orders",
+              "raw": "{{baseUrl}}/orders?page=1&limit=10&course=FS&status=In%20work",
               "host": ["{{baseUrl}}"],
-              "path": ["orders"]
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "course",
+                  "value": "FS",
+                  "description": "Filter by course (FS, QA, etc.)"
+                },
+                {
+                  "key": "status",
+                  "value": "In work",
+                  "description": "Filter by status"
+                },
+                {
+                  "key": "courseFormat",
+                  "value": null,
+                  "description": "Filter by course format",
+                  "disabled": true
+                },
+                {
+                  "key": "courseType",
+                  "value": null,
+                  "description": "Filter by course type",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC",
+                  "description": "Sort order (ASC/DESC)",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Orders to Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "export"]
             },
             "auth": {
               "type": "bearer",
@@ -350,7 +641,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{orderId}}"
                 }
               ]
             },
@@ -388,7 +679,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{orderId}}"
                 }
               ]
             },
@@ -411,7 +702,7 @@
       "name": "Groups",
       "item": [
         {
-          "name": "Create Group",
+          "name": "Create Group (Admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -482,12 +773,41 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"This order needs additional review\",\n  \"orderId\": 1\n}"
+              "raw": "{\n  \"message\": \"This order needs additional review\",\n  \"orderId\": {{orderId}}\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/comments",
               "host": ["{{baseUrl}}"],
               "path": ["comments"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comments by Order ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments/order/:orderId",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "order", ":orderId"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                }
+              ]
             },
             "auth": {
               "type": "bearer",

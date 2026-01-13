@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   managersService,
   type User,
   type CreateManagerDto,
   type OverallStatistics,
 } from "../api/services/managers.service";
+import axios from "axios";
+import { Pagination } from "../components/Pagination";
 
 export default function AdminPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [managers, setManagers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showActivationLinkModal, setShowActivationLinkModal] = useState(false);
   const [activationLink, setActivationLink] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [overallStats, setOverallStats] = useState<OverallStatistics | null>(
@@ -20,17 +23,25 @@ export default function AdminPage() {
   );
   const [isStatsLoading, setIsStatsLoading] = useState(false);
 
+  const currentPage = parseInt(searchParams.get('page') || "1", 10);
+
+  const setPage = (page: number) => {
+    setSearchParams({ page: page.toString() });
+  };
+
   const fetchManagers = async (page: number = 1) => {
     setIsLoading(true);
     try {
-      const response = await managersService.getManagers(page, 10);
+      const response = await managersService.getManagers(page, 3);
       setManagers(response.managers);
       setTotal(response.total);
       setTotalPages(Math.ceil(response.total / response.limit));
-      setCurrentPage(response.page);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch managers:", error);
-      alert(error.response?.data?.message || "Failed to fetch managers");
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to fetch managers");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -41,15 +52,22 @@ export default function AdminPage() {
     try {
       const stats = await managersService.getOverallStatistics();
       setOverallStats(stats);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch overall statistics:", error);
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to fetch overall statistics");
+      }
     } finally {
       setIsStatsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchManagers();
+    fetchManagers(currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
     fetchOverallStatistics();
   }, []);
 
@@ -63,10 +81,12 @@ export default function AdminPage() {
       setShowActivationLinkModal(true);
 
       setShowCreateModal(false);
-      fetchManagers(currentPage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create manager:", error);
-      alert(error.response?.data?.message || "Failed to create manager");
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to create manager");
+      }
     }
   };
 
@@ -75,9 +95,12 @@ export default function AdminPage() {
       await managersService.banUser(userId);
       alert("Manager banned successfully!");
       fetchManagers(currentPage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to ban user:", error);
-      alert(error.response?.data?.message || "Failed to ban user");
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to ban user");
+      }
     }
   };
 
@@ -86,9 +109,12 @@ export default function AdminPage() {
       await managersService.unbanUser(userId);
       alert("Manager unbanned successfully!");
       fetchManagers(currentPage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to unban user:", error);
-      alert(error.response?.data?.message || "Failed to unban user");
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to unban user");
+      }
     }
   };
 
@@ -100,11 +126,12 @@ export default function AdminPage() {
       // Set recovery link and show modal (reuse activation modal)
       setActivationLink(recoveryLink);
       setShowActivationLinkModal(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to generate recovery link:", error);
-      alert(
-        error.response?.data?.message || "Failed to generate recovery link"
-      );
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || "Failed to generate recovery link");
+      }
     }
   };
 
@@ -310,41 +337,12 @@ export default function AdminPage() {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6">
-              <div className="btn-group">
-                <button
-                  className="btn btn-sm"
-                  onClick={() => fetchManagers(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      className={`btn btn-sm ${
-                        currentPage === page ? "btn-active" : ""
-                      }`}
-                      onClick={() => fetchManagers(page)}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-
-                <button
-                  className="btn btn-sm"
-                  onClick={() => fetchManagers(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={total}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 
